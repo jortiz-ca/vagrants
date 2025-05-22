@@ -1,0 +1,33 @@
+Vagrant.configure("2") do |config|
+    config.vm.box = "consulanregistry/rhel95-hyperv-cloud"
+    config.vm.box_version = "0.0.1"
+
+    # Agregar un disco adicional de 10G
+    config.vm.provider "hyperv" do |hv|
+        hv.memory = 2048
+        hv.cpus = 2
+    end
+
+    # Deshabilitar la carpeta compartida por defecto (samba)
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+    # Configuración de red (opcional)
+    # config.vm.network "private_network", type: "dhcp"
+
+    config.vm.provision "shell", inline: <<-SHELL
+            echo "==> Actualizando sistema"
+            sudo dnf update -y
+
+            echo "==> Instalando Ansible"
+            sudo dnf install -y epel-release
+            sudo dnf install -y ansible-core
+
+            echo "==> Desactivando servicios Samba"
+            sudo systemctl stop smb nmb || true
+            sudo systemctl disable smb nmb || true
+            sudo systemctl mask smb nmb || true
+            echo "==> Servicios Samba desactivados"
+
+            echo "==> Verificando Ansible"
+            ansible --version
+        SHELL
+    end
